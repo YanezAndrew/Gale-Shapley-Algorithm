@@ -5,11 +5,48 @@ Please do not change the filename or the function names!
 
 import numpy as np
 
-P1 = np.load('example_1.npy')
-P2 = np.load('example_2.npy')
+# P1 = np.load('example_1.npy')
+# driver = np.array([[3, 3, 2, 3],
+#         [4, 1, 3, 2],
+#         [2, 4, 4, 1],
+#         [1, 2, 1, 4]])
+# rider = np.array([[1, 2, 3, 4],
+#         [1, 4, 3, 2],
+#         [2, 1, 3, 4],
+#         [4, 2, 3, 1]])
+
+# P2 = np.load('example_2.npy')
+
+
+with open('example_1.npy', 'rb') as f:
+    P1 = np.load(f)
+    P2 = np.load(f)
+
+with open('example_2.npy', 'rb') as f:
+    P11 = np.load(f)
+    P22 = np.load(f)
 
 print(P1)
 print(P2)
+
+
+
+
+
+# print(P1)
+# print(P2)
+def is_one_match_per_row(Match):
+    '''
+    Check if there is exactly one "1" in each row of the match matrix.
+
+    Args:
+        Match (numpy.ndarray): an m x n matrix indicating the matches.
+
+    Returns:
+        bool: True if there is exactly one "1" in each row, False otherwise.
+    '''
+    row_sums = np.sum(Match, axis=1)
+    return np.all(row_sums == 1)
 
 def GaleShapleyAlgorithm(P1, P2):
     '''
@@ -25,35 +62,64 @@ def GaleShapleyAlgorithm(P1, P2):
     '''
 
     ### WRITE YOUR CODE BELOW
-
-    m, n = np.shape(P1)
-    Match = np.zeros((m, n), dtype=int)  # Initialize Match matrix with zeros
+    # P1 is proposing
     NumStages = 0
+    m, n = np.shape(P1)
+    my_dict = {int(i): -1 for i in range(0, m)}
+    proposers = set()
 
-    # Keep track of the indices of the women each man has proposed to
-    proposals = np.zeros(m, dtype=int)
+    Match = np.zeros((m, n), dtype=int)  # Initialize Match matrix with zeros
 
-    while np.sum(Match == 0) > 0:  # Check if there are unmatched men
-        for i in range(m):
-            if Match[i, proposals[i]] == 0:
-                woman = P1[i, proposals[i]]
+    # Arrays to keep track of the proposals received by each man and the current proposal index
+
+    # proposals_received = np.zeros(n, dtype=int)
+    # current_proposal = np.zeros(n, dtype=int)
+
+    # Run the Gale-Shapley algorithm
+    # print("----------------------------------")
+    while (is_one_match_per_row(Match) == False):
+        for x, row in enumerate(P1):
+            if (x not in proposers):
+                y = np.argmin(row)
+                # proposal_val is the value that the person being proposed to values to the person proposing
+                val = P2[y][x]
                 
-                if 0 <= woman < n:  # Ensure the index is within bounds
-                    if Match[:, woman].sum() == 0:
-                        Match[i, proposals[i]] = 1
+                if my_dict[y] != -1:
+                    # if (NumStages == 1):
+                    #     print("here: ", (x,y))
+                    #     print(my_dict[y])
+                    #     print("row: ", row)
+                    #     print(P1)
+                    # print("MYDICT: ", my_dict[y])
+                    if val < my_dict[y][2]:
+                        # Remove the previous proposer from the set
+                        proposers.remove(my_dict[y][0])
+                        proposers.add(x)
+                    
+                        
+                        
+                        P1[x][y] = 10e5
+                        Match[my_dict[y][1]][my_dict[y][0]] = 0 
+                        Match[y][x] = 1 
+                        my_dict[y] = (x, y, val)
                     else:
-                        other_man = np.where(Match[:, woman] == 1)[0][0]
-                        if P2[woman, i] < P2[woman, other_man]:
-                            Match[i, proposals[i]] = 1
-                            Match[other_man, woman] = 0
+                        P1[x][y] = 10e5
+
+
                 else:
-                    print("Warning: Invalid woman index:", woman)
-                    print("Dimensions of P1:", np.shape(P1))
-                    print("Dimensions of Match:", np.shape(Match))
 
-            proposals[i] += 1
-
-        NumStages += 1
+                    proposers.add(x)
+                    Match[y][x] = 1
+                    my_dict[y] = (x, y, val)
+                    P1[x][y] = 10e5
+                    # print("P1: --------------------------------------------------\n", P1)
+                    
+                    
+        NumStages +=1
+        # print("NumStages:", NumStages)
+        # print("proposers:", proposers)
+        # print("Proposal Dict" ,my_dict)
+        # print("Match:\n", Match)
 
     ### DO NOT EDIT BELOW THIS LINE
     return Match, NumStages
